@@ -51,6 +51,7 @@ export function pageHtml(ctx, p, html, history) {
     crumbs: breadcrumbs(ctx, p.dir),
     body: `<article>
 <h1>${esc(p.title)}${stubBadge(p)}</h1>
+<p class="edit"><a href="${ctx.basePath}/editor/?page=${esc(p.slug)}" rel="nofollow">${esc(ctx.wiki.editor?.unlock_label ?? 'Edit')}</a></p>
 ${tags}
 ${html}
 </article>

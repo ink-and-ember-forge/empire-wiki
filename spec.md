@@ -21,7 +21,7 @@ A personal wiki for organising worldbuilding notes (the "Empire" notes), hosted 
 | Publishing | Straight to live; no review step |
 | Credentials | Each editor's GitHub token, encrypted in the repo, unlocked with a personal passphrase |
 | Token type | **Fine-grained personal access token**, scoped to this repository only, Contents: read/write. Set an expiry and renew it |
-| Passphrase | Minimum **16 characters**, or 4+ random words. Enforced by the editor when a token is encrypted |
+| Passphrase | Minimum **16 characters** (four random words usually satisfies this). Enforced by the editor when a token is encrypted |
 | Key derivation | **PBKDF2-HMAC-SHA256, 600,000 iterations** (WebCrypto), AES-GCM, random salt and IV per token |
 | Licence | **CC BY-SA 4.0** (content and code) |
 | Access control | None beyond the above. Hidden means "not listed", not "access-controlled" |

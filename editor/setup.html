@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'">
+<title>Token setup</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<main>
+  <h1>Token setup</h1>
+  <p>Encrypts your GitHub token with a passphrase, in this browser. Nothing is uploaded; the output is safe to commit to the repository because it cannot be read without your passphrase. <a href="./">Back to the editor</a></p>
+  <ol class="hint">
+    <li>On GitHub: Settings, Developer settings, Personal access tokens, <b>Fine-grained tokens</b>, Generate new token.</li>
+    <li>Resource owner: ink-and-ember-forge. Repository access: <b>Only select repositories</b>, then empire-wiki. Permissions: <b>Contents: Read and write</b>. Set an expiry.</li>
+    <li>Paste the token below.</li>
+  </ol>
+  <p id="status" role="status"></p>
+  <form id="form" autocomplete="off">
+    <label>GitHub token <input id="token" type="password" required autocomplete="off" spellcheck="false"></label>
+    <label>Passphrase (16+ characters; four random words works) <input id="pass" type="password" required autocomplete="new-password"></label>
+    <label>Repeat passphrase <input id="pass2" type="password" required autocomplete="new-password"></label>
+    <button type="submit">Encrypt</button>
+  </form>
+  <section id="result" class="panel" hidden>
+    <h2>Commit this file</h2>
+    <p>Create <code id="filename"></code> in the repository with exactly this content (GitHub: Add file, Create new file, paste, Commit). It appears on the site after the next deploy.</p>
+    <textarea id="out" rows="10" readonly></textarea>
+    <p class="hint">Forgetting the passphrase cannot be recovered: make a new token and repeat this setup.</p>
+  </section>
+</main>
+<script type="module" src="setup.js"></script>
+</body>
+</html>

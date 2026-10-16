@@ -180,6 +180,7 @@ for (const f of fs.readdirSync(path.join(ROOT, 'build/assets'))) {
 // The editor source is published under /editor/ (once it exists).
 const editorDir = path.join(ROOT, 'editor');
 if (fs.existsSync(editorDir)) fs.cpSync(editorDir, path.join(OUT, 'editor'), { recursive: true });
+write('editor/config.json', JSON.stringify({ repo: wiki.repo, branch: wiki.branch ?? 'main', basePath }));
 write('.nojekyll', '');
 
 for (const w of warnings) console.warn(`warning: ${w}`);

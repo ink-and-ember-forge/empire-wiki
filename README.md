@@ -41,6 +41,20 @@ npm run build   # writes _site/
 npm run serve   # builds with a local base URL and serves http://localhost:8080
 ```
 
+## Editor
+
+Live at `/editor/` on the site; every page has an **Edit** link that opens it there.
+
+**One-time setup per editor** (the owner has no token file yet):
+
+1. Create a fine-grained GitHub token: resource owner `ink-and-ember-forge`, only `empire-wiki`, permission **Contents: Read and write**, with an expiry.
+2. Open `/editor/setup.html`, paste the token, choose a passphrase (16+ characters). Everything happens in your browser.
+3. Commit the JSON it shows to `editor/tokens/<your-github-username>.json` (GitHub web UI is fine). After the next deploy you can unlock.
+
+The token is decrypted into memory only and is gone when the tab reloads. Publishing commits straight to `main` as you.
+
+Run the tests with `npm test`.
+
 ## One-time GitHub setup
 
 1. Settings → Pages → Build and deployment → Source: **GitHub Actions**.
