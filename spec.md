@@ -217,14 +217,13 @@ The editor is a browser page built into the site (under `/editor/`). It talks to
 - **Action versions** (checked against the actions' published tags, not yet exercised by a real run): `actions/checkout@v7`, `actions/setup-node@v7`, `actions/configure-pages@v6`, `actions/upload-pages-artifact@v5`, `actions/deploy-pages@v5`.
 - **Passphrase and KDF.** See section 3. The encrypted token file is stored in a public repository, so it can be downloaded and attacked offline. The passphrase length is the main defence; the iteration count only slows each guess.
 - **Token type.** Fine-grained PAT limited to this repository. If an encrypted token were ever cracked, the damage is limited to this wiki.
-- **Licence.** CC BY-SA 4.0. `LICENSE` currently holds a notice with links; the full legal code still needs pasting in.
+- **Licence.** CC BY-SA 4.0. `LICENSE` holds the full legal code.
 - **Starting content.** Empty `content/characters`, `content/factions` and `content/locations`; tags as in `tags.yml`. No notes migrated.
 - **Rate limits (design rule).** The public site makes no live API calls; history, listings and search data are built in advance. The editor uses the unlocked token for every API call, including reads, so it never depends on the low anonymous limit. The current numeric limits have not been verified against GitHub's documentation (anonymous access is far lower than authenticated). Publishing is a handful of writes per publish, well inside any limit.
 
 ### Still to do
 
 - **Pages source setting.** In the repository: Settings, then Pages, then Build and deployment, then Source: **GitHub Actions**. Confirm the menu wording when doing it.
-- **Licence text.** Replace the notice in `LICENSE` with the full CC BY-SA 4.0 legal code.
 - **Token expiry.** Choose an expiry for the owner's fine-grained token and set a reminder to renew it.
 
 ## 14. Out of scope for version 1
