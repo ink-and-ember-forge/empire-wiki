@@ -1,0 +1,20 @@
+:root { --bg:#fbfaf7; --fg:#222; --muted:#6b675f; --accent:#8a4b2a; --line:#e3dfd6; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1c1b19; --fg:#e8e4da; --muted:#9a958a; --accent:#d99a6c; --line:#33312c; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.6 Georgia, serif; }
+a { color:var(--accent); }
+header.site { display:flex; gap:1rem; align-items:center; justify-content:space-between; flex-wrap:wrap; padding:.75rem 1rem; border-bottom:1px solid var(--line); }
+.brand { font-weight:bold; text-decoration:none; font-size:1.1rem; }
+main { max-width:46rem; margin:0 auto; padding:1rem; }
+.crumbs, small, .history, .tags { color:var(--muted); font-size:.9rem; }
+.badge { font:600 .7rem sans-serif; text-transform:uppercase; background:var(--line); color:var(--muted); padding:.1rem .4rem; border-radius:3px; vertical-align:middle; margin-left:.3rem; }
+.tag { border:1px solid var(--line); padding:0 .4rem; border-radius:3px; }
+ul.pages, ul.folders { padding-left:1.2rem; }
+ul.pages li { margin:.5rem 0; }
+.history { margin-top:3rem; border-top:1px solid var(--line); }
+.history ul { padding-left:1.2rem; }
+.search { position:relative; }
+.search input { font:inherit; font-size:.9rem; padding:.3rem .5rem; width:15rem; max-width:100%; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; }
+#results { position:absolute; right:0; z-index:1; width:22rem; max-width:90vw; margin:.25rem 0 0; padding:0; list-style:none; background:var(--bg); border:1px solid var(--line); border-radius:4px; max-height:60vh; overflow:auto; }
+#results li { padding:.4rem .6rem; border-bottom:1px solid var(--line); }
+#results li:last-child { border-bottom:0; }

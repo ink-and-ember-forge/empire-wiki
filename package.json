@@ -1,0 +1,14 @@
+{
+  "name": "empire-wiki",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build/build.js",
+    "serve": "BASE_URL=http://localhost:8080 node build/build.js && npx --yes http-server _site -p 8080"
+  },
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "js-yaml": "^4.1.0",
+    "markdown-it": "^14.1.0"
+  }
+}
