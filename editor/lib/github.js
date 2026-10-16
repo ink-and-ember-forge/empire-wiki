@@ -68,6 +68,11 @@ export class GitHub {
     return (await res.json()).content.sha;
   }
 
+  /** The text of a file, by blob sha (used to index every page's title and id). */
+  async getBlobText(sha) {
+    return b64ToText((await this.#json(`/repos/${this.repo}/git/blobs/${sha}`)).content);
+  }
+
   /** Every file and folder on the branch (used to know which folders exist). Null when GitHub truncates the listing. */
   async listTree() {
     const t = await this.#json(`/repos/${this.repo}/git/trees/${encodeURIComponent(this.branch)}?recursive=1`);

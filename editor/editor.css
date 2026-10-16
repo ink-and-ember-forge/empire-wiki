@@ -26,3 +26,8 @@ a.wikilink.missing { color:#b3261e; text-decoration:underline dashed; text-under
 @media (prefers-color-scheme: dark) { .hint.warn:not(:empty) { color:#f0c36d; } }
 details.panel { padding-bottom:0; }
 details.panel summary { cursor:pointer; padding:.6rem 0; }
+#picker { list-style:none; margin:-.25rem 0 .5rem; padding:0; border:1px solid var(--line); border-radius:4px; max-height:14rem; overflow:auto; }
+#picker li { padding:.4rem .6rem; cursor:pointer; border-bottom:1px solid var(--line); font-size:.9rem; }
+#picker li:last-child { border-bottom:0; }
+#picker li[aria-selected=true] { background:var(--line); }
+#picker small { color:var(--muted); }

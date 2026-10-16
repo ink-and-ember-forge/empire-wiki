@@ -18,16 +18,22 @@ export const slugify = (s) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+/** Normalised form of a link's target text; the key used in a page's link map. */
+export const linkKey = (t) => t.trim().toLowerCase().replace(/\s+/g, ' ');
+
 const slugPath = (t) => t.split('/').map(slugify).filter(Boolean).join('/');
 
 /**
- * entries: [{ slug, title, status }] for every page (drafts included).
- * Returns resolve(target, fromDir) -> { exists, url | editUrl, slug, draft, ambiguous } or null.
+ * entries: [{ slug, title, status, id? }] for every page (drafts included).
+ * Returns resolve(target, fromDir, links?) -> { exists, url | editUrl, slug, draft, ambiguous } or null.
+ * `links` is the source page's link map (Map of linkKey -> page id). A recorded id wins over any
+ * name match, so a link keeps working after its target is moved or retitled.
  */
 export function makeResolver(entries, { basePath = '' } = {}) {
   const byPath = new Map();
   const byTitle = new Map();
   const byName = new Map();
+  const byId = new Map(entries.filter((e) => e.id).map((e) => [e.id, e]));
   const add = (m, k, e) => m.set(k, [...(m.get(k) ?? []), e]);
   for (const e of entries) {
     add(byPath, e.slug.toLowerCase(), e);
@@ -35,13 +41,16 @@ export function makeResolver(entries, { basePath = '' } = {}) {
     add(byName, e.slug.split('/').pop().toLowerCase(), e);
   }
 
-  return (target, fromDir = '') => {
+  return (target, fromDir = '', links = null) => {
     const raw = target.trim();
     const isPath = raw.includes('/');
     const name = isPath ? slugPath(raw) : slugify(raw);
-    if (!name) return null;
+    const pinned = byId.get(links?.get(linkKey(raw)));
+    if (!name && !pinned) return null;
 
-    const hits = [...((isPath && byPath.get(name)) || byTitle.get(raw.toLowerCase()) || byName.get(name) || [])];
+    const hits = pinned
+      ? [pinned]
+      : [...((isPath && byPath.get(name)) || byTitle.get(raw.toLowerCase()) || byName.get(name) || [])];
     // Prefer a page in the same folder as the link, then the shortest path.
     hits.sort((a, b) => Number(b.slug.startsWith(`${fromDir}/`)) - Number(a.slug.startsWith(`${fromDir}/`)) || a.slug.localeCompare(b.slug));
     const hit = hits[0];
