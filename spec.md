@@ -182,6 +182,13 @@ The editor is a browser page built into the site (under `/editor/`). It talks to
 - Editing a published or hidden page starts from the page itself.
 - **Drafts are edited from the page list**, since they aren't built and can't be reached from the public site.
 
+### Location, moving and the live site
+
+- Every editor page has a **Back to the wiki** link. Once a page is open, a **View live page** link goes to its built version; a draft (or a page that doesn't exist yet) shows a "not on the live site" note instead.
+- The **Location** panel shows where the page lives (`content/<path>.md`). For a **new page** it sets where the page will be created; nothing is saved until publish. For an **existing page** it **moves/renames** the page: one commit that keeps the file's content unchanged, so Git records a rename and the change log follows it. A move is refused while there are unpublished edits, if the destination already exists, or if the wiki changed during the move.
+- **New folder warning.** If a path's folder doesn't exist yet, the editor warns (in the Location panel, and again in the publish confirmation), suggests the nearest existing folder if it looks like a typo, and lists the existing ones. The warning doesn't block anything: creating a folder is allowed.
+- A move does not rewrite links. `[[Title]]` links keep working; links written as `[[old-name]]` or `[[folder/old-name]]` need updating, and the old web address stops working once the site rebuilds (no redirects).
+
 ### Conflicts
 
 - The GitHub API requires the file's current version when writing.

@@ -21,3 +21,8 @@ button.secondary { background:none; color:var(--accent); border:1px solid var(--
 @media (prefers-color-scheme: dark) { #status.error { color:#f2b8b5; } }
 a.wikilink.missing { color:#b3261e; text-decoration:underline dashed; text-underline-offset:3px; }
 @media (prefers-color-scheme: dark) { a.wikilink.missing { color:#f2b8b5; } }
+.topnav { font-size:.9rem; margin-bottom:.5rem; }
+.hint.warn:not(:empty) { color:#8a5a00; border-left:3px solid #d9a400; padding-left:.5rem; }
+@media (prefers-color-scheme: dark) { .hint.warn:not(:empty) { color:#f0c36d; } }
+details.panel { padding-bottom:0; }
+details.panel summary { cursor:pointer; padding:.6rem 0; }

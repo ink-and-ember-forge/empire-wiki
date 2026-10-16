@@ -88,3 +88,44 @@ test('validation and path rules', () => {
   assert.ok(isValidPath('characters/navarr-vate'));
   for (const bad of ['', '../x', '/x', 'a//b', 'A/b', 'a/b.md', 'a/']) assert.ok(!isValidPath(bad), bad);
 });
+
+import { foldersFrom, closestFolder, folderNote } from '../editor/lib/folders.js';
+
+const TREE = [
+  { path: 'README.md', type: 'blob', sha: 'r' },
+  { path: 'content', type: 'tree' },
+  { path: 'content/characters', type: 'tree' },
+  { path: 'content/characters/nisien.md', type: 'blob', sha: 'n1' },
+  { path: 'content/characters/npcs/extra.md', type: 'blob', sha: 'e1' }, // no tree entry: implied
+  { path: 'content/factions/.gitkeep', type: 'blob', sha: 'g' },
+  { path: 'content/locations', type: 'tree' },
+  { path: 'editor/index.html', type: 'blob', sha: 'i' },
+];
+
+test('folders and pages are read from a repository tree', () => {
+  const { folders, files } = foldersFrom(TREE);
+  assert.deepEqual([...folders].sort(), ['characters', 'characters/npcs', 'factions', 'locations']);
+  assert.deepEqual([...files.keys()].sort(), ['characters/nisien', 'characters/npcs/extra']);
+  assert.equal(files.get('characters/nisien'), 'n1');
+});
+
+test('closestFolder suggests typo fixes but not unrelated names', () => {
+  const f = new Set(['characters', 'factions', 'locations']);
+  assert.equal(closestFolder('charcters', f), 'characters');
+  assert.equal(closestFolder('location', f), 'locations');
+  assert.equal(closestFolder('weapons', f), null);
+  assert.equal(closestFolder('characters', f), null); // exact match is not a typo
+  assert.equal(closestFolder('ab', new Set(['ac'])), null); // too short to guess
+});
+
+test('folderNote warns only for folders that do not exist', () => {
+  const { folders } = foldersFrom(TREE);
+  assert.equal(folderNote('characters/new-person', folders), '');
+  assert.equal(folderNote('root-page', folders), '');
+  assert.equal(folderNote('characters/npcs/another', folders), '');
+  assert.match(folderNote('charcters/x', folders), /doesn't exist yet.*Did you mean "characters"\?.*Existing folders: characters, characters\/npcs, factions, locations/);
+  assert.match(folderNote('weapons/sword', folders), /weapons/);
+  assert.doesNotMatch(folderNote('weapons/sword', folders), /Did you mean/);
+  assert.equal(folderNote('weapons/sword', new Set()), ''); // nothing known: stay quiet
+  assert.equal(folderNote('weapons/sword', null), '');
+});

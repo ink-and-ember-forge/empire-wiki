@@ -55,6 +55,8 @@ Live at `/editor/` on the site; every page has an **Edit** link that opens it th
 
 The token is decrypted into memory only and is gone when the tab reloads. Publishing commits straight to `main` as you.
 
+The **Location** panel moves or renames a page (one commit, history preserved) and warns when a path would create a new folder. Links by title survive a move; links by file name or path do not.
+
 Run the tests with `npm test`.
 
 ## One-time GitHub setup
