@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://api.github.com; base-uri 'none'; form-action 'none'">
+<title>Editor</title>
+<link rel="stylesheet" href="editor.css">
+</head>
+<body>
+<main>
+  <h1>Editor</h1>
+  <p id="status" role="status"></p>
+
+  <form id="unlock" autocomplete="off">
+    <h2>Unlock</h2>
+    <label>GitHub username <input id="user" required autocapitalize="off" spellcheck="false"></label>
+    <label>Passphrase <input id="pass" type="password" required autocomplete="current-password"></label>
+    <button type="submit">Unlock</button>
+    <p class="hint">First time? <a href="setup.html">Set up your token</a>.</p>
+  </form>
+
+  <section id="work" hidden>
+    <form id="open">
+      <label>Page path <input id="path" placeholder="characters/navarr-vate" required spellcheck="false"></label>
+      <button type="submit">Open</button>
+      <p class="hint">Path under <code>content/</code>, without <code>.md</code>. A path that doesn't exist yet starts a new draft.</p>
+    </form>
+
+    <form id="edit" hidden>
+      <label>Title <input id="title" required></label>
+      <div class="row">
+        <label>Status
+          <select id="statusSel"><option>draft</option><option>published</option><option>hidden</option></select>
+        </label>
+        <label class="check"><input id="stub" type="checkbox"> Stub</label>
+        <label>Order <input id="order" type="number" step="1"></label>
+      </div>
+      <label>Tags (comma separated) <input id="tags" spellcheck="false"></label>
+      <p class="hint" id="knownTags"></p>
+      <label>Summary <input id="summary"></label>
+      <label class="check"><input id="previewToggle" type="checkbox"> Preview</label>
+      <label id="bodyLabel">Body (Markdown) <textarea id="body" rows="22" spellcheck="true"></textarea></label>
+      <div id="preview" class="preview" hidden></div>
+      <button type="submit">Review &amp; publish</button>
+    </form>
+
+    <section id="confirm" class="panel" hidden>
+      <h2>Publish</h2>
+      <p id="confirmList"></p>
+      <label>Edit summary (optional) <input id="message"></label>
+      <p class="hint">Goes straight to the live site, which takes a minute or two to rebuild.</p>
+      <button id="confirmBtn" type="button">Confirm &amp; publish</button>
+      <button id="cancelBtn" type="button" class="secondary">Back</button>
+    </section>
+
+    <section id="conflict" class="panel" hidden>
+      <h2>This page changed on GitHub</h2>
+      <p>Someone published a newer version after you opened it. Nothing was overwritten. Newer version below; re-apply your change on top of it.</p>
+      <textarea id="remoteText" rows="12" readonly></textarea>
+      <button id="takeRemote" type="button">Load newer version (discards my edits)</button>
+      <button id="keepMine" type="button" class="secondary">Keep editing mine</button>
+    </section>
+  </section>
+</main>
+<script src="vendor/markdown-it.min.js"></script>
+<script type="module" src="editor.js"></script>
+</body>
+</html>

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "node build/build.js",
+    "test": "node --test",
     "serve": "BASE_URL=http://localhost:8080 node build/build.js && npx --yes http-server _site -p 8080"
   },
   "engines": { "node": ">=20" },

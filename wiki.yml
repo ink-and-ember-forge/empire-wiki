@@ -2,6 +2,8 @@ schema: 1
 title: Empire Notes
 base_url: https://ink-and-ember-forge.github.io/empire-wiki
 default_status: draft
+repo: ink-and-ember-forge/empire-wiki   # used by the editor
+branch: main
 editor:
   unlock_label: Edit
   show_history: true

@@ -18,3 +18,4 @@ ul.pages li { margin:.5rem 0; }
 #results { position:absolute; right:0; z-index:1; width:22rem; max-width:90vw; margin:.25rem 0 0; padding:0; list-style:none; background:var(--bg); border:1px solid var(--line); border-radius:4px; max-height:60vh; overflow:auto; }
 #results li { padding:.4rem .6rem; border-bottom:1px solid var(--line); }
 #results li:last-child { border-bottom:0; }
+.edit { float:right; margin:0; font-size:.85rem; }
