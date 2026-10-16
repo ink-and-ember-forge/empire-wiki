@@ -28,6 +28,7 @@ A personal wiki for organising worldbuilding notes (the "Empire" notes), hosted 
 | Change log | Per-page history generated from Git, shown on every built page |
 | Edit summary | Optional. A default is generated from what changed when left blank |
 | Navigation | Folder listings generated from the content folder structure |
+| Tag pages | Every tag has a page at `/tags/<tag>/`: a description you edit, then an A-Z list of its published pages |
 | Search | Client-side search over page titles and tags only |
 | Schema version | One version number for the whole repo, in `wiki.yml` |
 
@@ -107,6 +108,17 @@ links:
 - **Build checks.** It fails on duplicate or malformed ids. It warns about orphaned link maps, entries whose target id doesn't exist, pages with no id, and how many links still match by name only.
 - **Old addresses redirect.** The build reads each page's Git rename history and writes a small redirect page at every previous address (never over a page that now lives there).
 
+### Tag pages
+
+Every tag gets its own page at `/tags/<tag>/`, laid out like a wiki category page: a description, then "Pages tagged ...", a count, and every published page with that tag, grouped by first letter in columns.
+
+- **Which tags exist.** Any tag listed in `tags.yml`, used on a published page, or described by a page in `content/tags/`. Tags that differ only by case, spacing or punctuation are one tag (`Old Kael` and `old-kael`); the name shown is the one in `tags.yml`, else the most-used spelling.
+- **The description is an ordinary page** at `content/tags/<tag>.md` (for `Old Kael`, `content/tags/old-kael.md`). Edit it in the editor like any page: Markdown, `[[links]]`, change log and all. Its title and tags are not shown; the tag page's own heading is `Tag: <name>`. A `draft` description is ignored. Without a description page, the short `description` from `tags.yml` is shown, and without that a note says there is none yet.
+- **"Edit description"** on every tag page opens the editor on `content/tags/<tag>.md`, as a new page set to `published` if it doesn't exist yet.
+- **Who is listed.** Published pages only, sorted ignoring case and accents with numbers compared as numbers; titles starting with a digit are filed under `0-9`, other characters under `#`. Drafts and hidden pages are never listed, and a tag only they use gets no page (unless it is in `tags.yml`). Description pages are not listed under their own tag.
+- **`/tags/`** lists every tag with its count. Each page's tags link to their tag pages, a **Tags** link is in every page header, and tag pages appear in search as `Tag: <name>`.
+- Pages directly in `content/tags/` are never built as ordinary pages, and `/tags/` is not a folder listing.
+
 ### Defaults
 
 - New pages default to `status: draft`, so nothing goes live by accident.
@@ -154,9 +166,10 @@ The build is a custom script (Node.js) that:
 7. Generates a folder listing page for each folder, excluding `hidden` pages.
 8. Generates a search index (JSON) of titles, tags, summaries, and URLs for `published` pages. **Hidden page titles are included**, as agreed.
 9. Generates a change log for each built page from Git history (see section 10).
-10. Writes redirect pages for each built page's previous addresses (from Git rename history).
-11. Writes everything to `_site/`.
-12. Warns about single-use tags. Fails on invalid front matter, missing required fields or duplicate ids.
+10. Writes a page for every tag (description plus A-Z list) and a tag index.
+11. Writes redirect pages for each built page's previous addresses (from Git rename history).
+12. Writes everything to `_site/`.
+13. Warns about single-use tags. Fails on invalid front matter, missing required fields or duplicate ids.
 
 The build does not need to be fast. The site is small.
 

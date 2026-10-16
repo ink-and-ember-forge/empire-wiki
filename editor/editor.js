@@ -55,7 +55,7 @@ $('unlock').addEventListener('submit', async (e) => {
     const wanted = params.get('page');
     if (wanted) {
       $('path').value = wanted;
-      openPage(wanted, params.get('title'));
+      openPage(wanted, params.get('title'), params.get('status'));
     }
   } catch (err) {
     say(err.message, true);
@@ -78,7 +78,7 @@ $('open').addEventListener('submit', (e) => {
   openPage($('path').value.trim().replace(/\.md$/, ''));
 });
 
-async function openPage(path, titleHint) {
+async function openPage(path, titleHint, statusHint) {
   if (!isValidPath(path)) return say(PATH_HELP, true);
   say('Loading…');
   hidePanels();
@@ -88,6 +88,7 @@ async function openPage(path, titleHint) {
       ? { path, sha: file.sha, page: parsePage(file.text), isNew: false }
       : { path, sha: undefined, page: emptyPage(), isNew: true };
     if (loaded.isNew && titleHint) loaded.page.fm.title = titleHint;
+    if (loaded.isNew && ['draft', 'published', 'hidden'].includes(statusHint)) loaded.page.fm.status = statusHint;
     await attachLinks();
     fillForm(loaded.page);
     show('edit', true);

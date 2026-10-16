@@ -21,3 +21,15 @@ ul.pages li { margin:.5rem 0; }
 .edit { float:right; margin:0; font-size:.85rem; }
 a.wikilink.missing { color:#b3261e; text-decoration:underline dashed; text-underline-offset:3px; }
 @media (prefers-color-scheme: dark) { a.wikilink.missing { color:#f2b8b5; } }
+header.site .navlink { margin-right:auto; margin-left:1rem; font-size:.9rem; }
+main.wide { max-width:70rem; }
+.tag { text-decoration:none; }
+a.tag:hover { border-color:var(--accent); }
+.tag-desc { margin:1rem 0 2rem; }
+.count { color:var(--muted); font-size:.95rem; }
+.taglist { columns:3 15rem; column-gap:2.5rem; }
+.taglist h3 { margin:1.1rem 0 .3rem; break-after:avoid-column; break-after:avoid; }
+.taglist h3:first-child { margin-top:0; }
+.taglist ul { margin:0; padding-left:1.2rem; }
+.taglist li { break-inside:avoid; margin:.15rem 0; }
+.taglist small { color:var(--muted); }

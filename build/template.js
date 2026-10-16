@@ -3,7 +3,7 @@ export const esc = (s) =>
 
 const stubBadge = (p) => (p.stub ? ' <span class="badge">stub</span>' : '');
 
-function layout({ wiki, basePath }, { title, head = '', body, crumbs = '' }) {
+function layout({ wiki, basePath }, { title, head = '', body, crumbs = '', wide = false }) {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -15,9 +15,10 @@ ${head}</head>
 <body data-base="${basePath}">
 <header class="site">
   <a class="brand" href="${basePath}/">${esc(wiki.title)}</a>
+  <a class="navlink" href="${basePath}/tags/">Tags</a>
   <div class="search"><input id="q" type="search" placeholder="Search titles and tags" autocomplete="off"><ul id="results" hidden></ul></div>
 </header>
-<main>
+<main${wide ? ' class="wide"' : ''}>
 ${crumbs}${body}
 </main>
 <script src="${basePath}/search.js"></script>
@@ -38,7 +39,12 @@ function breadcrumbs({ basePath }, dir) {
 
 export function pageHtml(ctx, p, html, history) {
   const tags = p.tags.length
-    ? `<p class="tags">${p.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join(' ')}</p>`
+    ? `<p class="tags">${p.tags
+        .map((t) => {
+          const url = ctx.tagUrl?.(t);
+          return url ? `<a class="tag" href="${esc(url)}">${esc(t)}</a>` : `<span class="tag">${esc(t)}</span>`;
+        })
+        .join(' ')}</p>`
     : '';
   const log = history.length
     ? `<section class="history"><h2>Change log</h2><ul>${history
@@ -95,4 +101,46 @@ export function redirectHtml({ wiki }, url, title) {
 </body>
 </html>
 `;
+}
+
+const plural = (n, one, many) => (n === 1 ? one : many);
+
+function groupedList(groups, render) {
+  return `<div class="taglist">${groups
+    .map((g) => `<h3>${esc(g.letter)}</h3>\n<ul>${g.items.map((i) => `<li>${render(i)}</li>`).join('')}</ul>`)
+    .join('\n')}</div>`;
+}
+
+/** A tag's page: its description, then every published page with the tag, grouped A-Z. */
+export function tagHtml(ctx, tag, descHtml, groups, history) {
+  const { basePath } = ctx;
+  const n = tag.members.length;
+  const edit = `${basePath}/editor/?page=${encodeURI(`tags/${tag.slug}`)}&title=${encodeURIComponent(tag.name)}&status=published`;
+  const log = history.length
+    ? `<section class="history"><h2>Change log</h2><ul>${history
+        .map((h) => `<li><time>${esc(h.date)}</time> \u00b7 ${esc(h.author)} \u00b7 ${esc(h.summary)}</li>`)
+        .join('')}</ul></section>`
+    : '';
+  return layout(ctx, {
+    title: `Tag: ${tag.name}`,
+    wide: true,
+    crumbs: `<nav class="crumbs"><a href="${basePath}/">Home</a> / <a href="${basePath}/tags/">Tags</a></nav>\n`,
+    body: `<h1>Tag: ${esc(tag.name)}</h1>
+<p class="edit"><a href="${esc(edit)}" rel="nofollow">Edit description</a></p>
+<div class="tag-desc">${descHtml || '<p class="hint">This tag has no description yet.</p>'}</div>
+<h2>Pages tagged &ldquo;${esc(tag.name)}&rdquo;</h2>
+${n ? `<p class="count">${n} ${plural(n, 'page is', 'pages are')} tagged &ldquo;${esc(tag.name)}&rdquo;.</p>\n${groupedList(groups, (p) => `<a href="${esc(p.url)}">${esc(p.title)}</a>${stubBadge(p)}`)}` : '<p>No pages have this tag yet.</p>'}
+${log}`,
+  });
+}
+
+/** /tags/: every tag, with how many pages carry it. */
+export function tagsIndexHtml(ctx, tags, groups) {
+  return layout(ctx, {
+    title: 'Tags',
+    wide: true,
+    crumbs: `<nav class="crumbs"><a href="${ctx.basePath}/">Home</a></nav>\n`,
+    body: `<h1>Tags</h1>
+${tags.length ? `<p class="count">${tags.length} ${plural(tags.length, 'tag', 'tags')}.</p>\n${groupedList(groups, (t) => `<a href="${esc(t.url)}">${esc(t.name)}</a> <small>(${t.members.length})</small>`)}` : '<p>No tags yet.</p>'}`,
+  });
 }

@@ -5,8 +5,9 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import MarkdownIt from 'markdown-it';
-import { pageHtml, listingHtml, redirectHtml } from './template.js';
-import { wikilinkPlugin, makeResolver } from '../editor/lib/wikilinks.js';
+import { pageHtml, listingHtml, redirectHtml, tagHtml, tagsIndexHtml, esc } from './template.js';
+import { buildTags, groupAlphabetically, isTagDescription, TAGS_DIR } from './tags.js';
+import { wikilinkPlugin, makeResolver, slugify } from '../editor/lib/wikilinks.js';
 import { ID_PATTERN, linkTargets, linkKey, parseLinkMap } from '../editor/lib/links.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -27,7 +28,8 @@ if (wiki.schema !== SUPPORTED_SCHEMA) {
   console.error(`Unsupported schema ${wiki.schema}; this build supports ${SUPPORTED_SCHEMA}.`);
   process.exit(1);
 }
-const tagDefs = (readYaml('tags.yml').tags ?? []).map((t) => t.name);
+const tagYml = (readYaml('tags.yml').tags ?? []).map((t) => ({ name: String(t.name), description: t.description ? String(t.description) : '' }));
+const tagDefs = tagYml.map((t) => t.name);
 const defaultStatus = STATUSES.includes(wiki.default_status) ? wiki.default_status : 'draft';
 const basePath = new URL(process.env.BASE_URL ?? wiki.base_url ?? 'http://localhost/').pathname.replace(/\/$/, '');
 const showHistory = wiki.editor?.show_history !== false;
@@ -185,11 +187,18 @@ fs.rmSync(OUT, { recursive: true, force: true });
 const ctx = { wiki, basePath };
 const built = pages.filter((p) => p.status !== 'draft');
 
+// Every tag gets a page at /tags/<tag>/; each page's tags link to them.
+const tags = buildTags(pages, tagYml, (m) => warnings.push(m));
+for (const t of tags) t.url = `${basePath}/${TAGS_DIR}/${t.slug}/`;
+const tagBySlug = new Map(tags.map((t) => [t.slug, t]));
+ctx.tagUrl = (raw) => tagBySlug.get(slugify(raw))?.url ?? null;
+
 // [[wiki links]] resolve against every page; drafts count as "not on the site yet".
 // A page's recorded link ids (links/<id>.yml) win over name matching.
 const resolve = makeResolver(pages.map(({ slug, title, status, id }) => ({ slug, title, status, id })), { basePath });
 const bySlug = new Map(pages.map((p) => [p.slug, p]));
 const moved = []; // { from, to, title }
+const tagDesc = new Map(); // tag slug -> { html, log }: the description page's rendered body and history
 let nameOnlyLinks = 0;
 const namesOnlyPages = new Set();
 for (const p of built) {
@@ -208,11 +217,24 @@ for (const p of built) {
     }
   }
   const h = history(p.rel);
-  write(`${p.slug}/index.html`, pageHtml(ctx, p, md.render(p.body, env), showHistory ? h.log : []));
-  for (const old of h.paths) if (old !== p.slug) moved.push({ from: old, to: p.url, title: p.title });
+  const html = md.render(p.body, env);
+  // A page in content/tags/ describes a tag: it becomes the top of that tag's page rather than a page of its own.
+  const tagSlug = isTagDescription(p) ? p.slug.slice(TAGS_DIR.length + 1) : null;
+  const url = tagSlug ? `${basePath}/${TAGS_DIR}/${tagSlug}/` : p.url;
+  if (tagSlug) tagDesc.set(tagSlug, { html, log: h.log });
+  else write(`${p.slug}/index.html`, pageHtml(ctx, p, html, showHistory ? h.log : []));
+  for (const old of h.paths) if (old !== p.slug) moved.push({ from: old, to: url, title: p.title });
 }
 
+for (const t of tags) {
+  const d = tagDesc.get(t.slug);
+  const descHtml = d?.html.trim() ? d.html : t.description ? `<p>${esc(t.description)}</p>` : '';
+  write(`${TAGS_DIR}/${t.slug}/index.html`, tagHtml(ctx, t, descHtml, groupAlphabetically(t.members), showHistory && d ? d.log : []));
+}
+write(`${TAGS_DIR}/index.html`, tagsIndexHtml(ctx, tags, groupAlphabetically(tags, (t) => t.name)));
+
 for (const d of dirs) {
+  if (d === TAGS_DIR) continue; // /tags/ is the tag index, written above
   const listed = built.filter((p) => p.dir === d && p.status === 'published').sort(byOrder);
   const subdirs = dirs
     .filter((x) => x !== d && path.posix.dirname(x) === (d || '.'))
@@ -237,13 +259,13 @@ if (pages.some((p) => !p.id)) {
 }
 if (nameOnlyLinks) warnings.push(`${nameOnlyLinks} link(s) on ${namesOnlyPages.size} page(s) match by name only. Run "npm run ids", or publish those pages in the editor.`);
 
-const searchIndex = built.sort(byOrder).map((p) => ({
-  title: p.title,
-  url: p.url,
-  tags: p.tags,
-  summary: p.summary,
-  stub: p.stub,
-}));
+const searchIndex = [
+  ...built
+    .filter((p) => !isTagDescription(p))
+    .sort(byOrder)
+    .map((p) => ({ title: p.title, url: p.url, tags: p.tags, summary: p.summary, stub: p.stub })),
+  ...tags.map((t) => ({ title: `Tag: ${t.name}`, url: t.url, tags: [], summary: t.description, stub: false })),
+];
 write('search.json', JSON.stringify(searchIndex));
 
 for (const f of fs.readdirSync(path.join(ROOT, 'build/assets'))) {
