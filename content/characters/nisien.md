@@ -1,6 +1,7 @@
 ---
 title: Nisien Duskbound
-status: draft
+status: published
+stub: true
 tags: [character, navarr, vate]
 updated: 2026-10-16
 ---
