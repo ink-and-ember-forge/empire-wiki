@@ -79,6 +79,14 @@ order: 10                   # position within its folder
 - **`order`** sorts pages within a folder. Pages without it sort alphabetically after those with it.
 - Unknown keys are **ignored** by the build, not treated as errors, so future fields don't break older builds.
 
+### Wiki links
+
+- `[[Navarr Vate]]` links to another page. The target is matched case-insensitively against page titles, then file names (`navarr-vate`). `[[characters/navarr-vate]]` matches an exact path under `content/`. `[[Target|label]]` shows `label` instead.
+- If the page is built (`published` or `hidden`), the link is a normal link.
+- If it isn't (no such page, or only a `draft`), it renders as a **missing link**: a different style (red, dashed underline) that opens the editor on that page. A missing name with no path becomes a new draft in the same folder as the page that links to it. Without an editor token, a reader just sees the unlock screen.
+- If two pages match, the build warns and prefers the one in the same folder, then the first by path.
+- Links inside code spans and code blocks are left alone. The editor preview resolves links against the published site, so drafts show as missing there.
+
 ### Defaults
 
 - New pages default to `status: draft`, so nothing goes live by accident.

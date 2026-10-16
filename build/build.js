@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import MarkdownIt from 'markdown-it';
 import { pageHtml, listingHtml } from './template.js';
+import { wikilinkPlugin, makeResolver } from '../editor/lib/wikilinks.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT = path.join(ROOT, 'content');
@@ -30,7 +31,7 @@ const defaultStatus = STATUSES.includes(wiki.default_status) ? wiki.default_stat
 const basePath = new URL(process.env.BASE_URL ?? wiki.base_url ?? 'http://localhost/').pathname.replace(/\/$/, '');
 const showHistory = wiki.editor?.show_history !== false;
 
-const md = new MarkdownIt({ html: false, linkify: true });
+const md = new MarkdownIt({ html: false, linkify: true }).use(wikilinkPlugin);
 
 function parsePage(file) {
   const rel = path.relative(CONTENT, file).split(path.sep).join('/');
@@ -149,11 +150,14 @@ fs.rmSync(OUT, { recursive: true, force: true });
 const ctx = { wiki, basePath };
 const built = pages.filter((p) => p.status !== 'draft');
 
+// [[wiki links]] resolve against every page; drafts count as "not on the site yet".
+const resolve = makeResolver(pages.map(({ slug, title, status }) => ({ slug, title, status })), { basePath });
 for (const p of built) {
-  write(
-    `${p.slug}/index.html`,
-    pageHtml(ctx, p, md.render(p.body), showHistory ? history(p.rel) : []),
-  );
+  const env = {
+    wikiResolve: (target) => resolve(target, p.dir),
+    wikiWarn: (m) => !warnings.includes(`${p.rel}: ${m}`) && warnings.push(`${p.rel}: ${m}`),
+  };
+  write(`${p.slug}/index.html`, pageHtml(ctx, p, md.render(p.body, env), showHistory ? history(p.rel) : []));
 }
 
 for (const d of dirs) {

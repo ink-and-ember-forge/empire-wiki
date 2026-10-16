@@ -1,10 +1,11 @@
 import { decryptToken } from './lib/crypto.js';
 import { GitHub, ConflictError } from './lib/github.js';
 import { parsePage, serializePage, emptyPage, defaultSummary, changes, validate, isValidPath } from './lib/page.js';
+import { wikilinkPlugin, makeResolver } from './lib/wikilinks.js';
 import yaml from './vendor/js-yaml.mjs';
 
 const $ = (id) => document.getElementById(id);
-const md = window.markdownit({ html: false, linkify: true });
+const md = window.markdownit({ html: false, linkify: true }).use(wikilinkPlugin);
 
 let cfg;
 let gh = null; // holds the decrypted token, in memory only
@@ -41,10 +42,11 @@ $('unlock').addEventListener('submit', async (e) => {
     show('work', true);
     say(`Unlocked as ${login}. The token stays in this tab's memory and is gone on reload.`);
     loadKnownTags();
-    const wanted = new URLSearchParams(location.search).get('page');
+    const params = new URLSearchParams(location.search);
+    const wanted = params.get('page');
     if (wanted) {
       $('path').value = wanted;
-      openPage(wanted);
+      openPage(wanted, params.get('title'));
     }
   } catch (err) {
     say(err.message, true);
@@ -67,7 +69,7 @@ $('open').addEventListener('submit', (e) => {
   openPage($('path').value.trim().replace(/\.md$/, ''));
 });
 
-async function openPage(path) {
+async function openPage(path, titleHint) {
   if (!isValidPath(path)) return say('Use lowercase letters, numbers, - and _ in folder/name form, e.g. characters/navarr-vate.', true);
   say('Loading…');
   hidePanels();
@@ -76,6 +78,7 @@ async function openPage(path) {
     loaded = file
       ? { path, sha: file.sha, page: parsePage(file.text), isNew: false }
       : { path, sha: undefined, page: emptyPage(), isNew: true };
+    if (loaded.isNew && titleHint) loaded.page.fm.title = titleHint;
     fillForm(loaded.page);
     show('edit', true);
     say(loaded.isNew ? `New page: content/${path}.md (draft until you change the status).` : `Editing content/${path}.md`);
@@ -115,12 +118,35 @@ function readForm() {
 }
 
 // ---- preview ----
-function renderPreviewState() {
+let siteIndex = null; // built pages, from search.json; drafts are unknown here, so they preview as missing
+async function wikiResolver() {
+  if (!siteIndex) {
+    try {
+      const entries = await (await fetch(`${cfg.basePath}/search.json`)).json();
+      siteIndex = entries.map((e) => ({ slug: e.url.slice(cfg.basePath.length).replace(/^\/|\/$/g, ''), title: e.title, status: 'published' }));
+    } catch {
+      siteIndex = [];
+    }
+  }
+  return makeResolver(siteIndex, { basePath: cfg.basePath });
+}
+
+async function renderPreviewState() {
   const on = $('previewToggle').checked;
   show('preview', on);
   show('bodyLabel', !on);
-  if (on) $('preview').innerHTML = md.render($('body').value);
+  if (!on) return;
+  const resolve = await wikiResolver();
+  const dir = loaded ? loaded.path.split('/').slice(0, -1).join('/') : '';
+  $('preview').innerHTML = md.render($('body').value, { wikiResolve: (t) => resolve(t, dir) });
 }
+// Links in the preview open in a new tab so an unpublished edit is never lost.
+$('preview').addEventListener('click', (e) => {
+  const a = e.target.closest('a');
+  if (!a) return;
+  e.preventDefault();
+  window.open(a.href, '_blank', 'noopener');
+});
 $('previewToggle').addEventListener('change', renderPreviewState);
 
 // ---- publish ----

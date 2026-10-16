@@ -19,3 +19,5 @@ button.secondary { background:none; color:var(--accent); border:1px solid var(--
 #status { min-height:1.5rem; }
 #status.error { color:#b3261e; }
 @media (prefers-color-scheme: dark) { #status.error { color:#f2b8b5; } }
+a.wikilink.missing { color:#b3261e; text-decoration:underline dashed; text-underline-offset:3px; }
+@media (prefers-color-scheme: dark) { a.wikilink.missing { color:#f2b8b5; } }

@@ -33,6 +33,8 @@ Markdown body here.
 
 Drafts are never built. Hidden pages are built but unlisted and `noindex`.
 
+Link to other pages with `[[Page title]]` (or `[[folder/file-name]]`, or `[[Page title|label]]`). Links to pages that don't exist yet, or are still drafts, show in red with a dashed underline and open the editor so you can create them.
+
 ## Local build
 
 ```sh

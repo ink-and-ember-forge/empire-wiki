@@ -19,3 +19,5 @@ ul.pages li { margin:.5rem 0; }
 #results li { padding:.4rem .6rem; border-bottom:1px solid var(--line); }
 #results li:last-child { border-bottom:0; }
 .edit { float:right; margin:0; font-size:.85rem; }
+a.wikilink.missing { color:#b3261e; text-decoration:underline dashed; text-underline-offset:3px; }
+@media (prefers-color-scheme: dark) { a.wikilink.missing { color:#f2b8b5; } }
