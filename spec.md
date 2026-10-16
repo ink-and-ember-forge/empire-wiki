@@ -20,6 +20,10 @@ A personal wiki for organising worldbuilding notes (the "Empire" notes), hosted 
 | Editing | Browser editor integrated into the public site |
 | Publishing | Straight to live; no review step |
 | Credentials | Each editor's GitHub token, encrypted in the repo, unlocked with a personal passphrase |
+| Token type | **Fine-grained personal access token**, scoped to this repository only, Contents: read/write. Set an expiry and renew it |
+| Passphrase | Minimum **16 characters**, or 4+ random words. Enforced by the editor when a token is encrypted |
+| Key derivation | **PBKDF2-HMAC-SHA256, 600,000 iterations** (WebCrypto), AES-GCM, random salt and IV per token |
+| Licence | **CC BY-SA 4.0** (content and code) |
 | Access control | None beyond the above. Hidden means "not listed", not "access-controlled" |
 | Change log | Per-page history generated from Git, shown on every built page |
 | Edit summary | Optional. A default is generated from what changed when left blank |
@@ -204,18 +208,23 @@ The editor is a browser page built into the site (under `/editor/`). It talks to
   4. Bump `schema` in `wiki.yml`.
   5. Merge to `main`.
 
-## 13. Open items
+## 13. Setup status
 
-These must be settled or verified before or during setup. Nothing in this list is decided.
+### Settled
 
-- **Repository owner and name.** Determines the Pages URL and the `base_url` in `wiki.yml`. Base URL: https://github.com/ink-and-ember-forge/empire-wiki/ for repo and https://ink.and.ember.forge.github.io/empire-wiki/ for the live site.
-- **Trusted editors.** Each needs a GitHub account and write access as a collaborator. Names and accounts not yet confirmed. 
-- **Pages source setting.** Set the repo to deploy from GitHub Actions. Confirm the current menu wording in GitHub's settings.
-- **Action versions.** Confirm the current versions of `actions/checkout`, `actions/setup-node`, `actions/configure-pages`, `actions/upload-pages-artifact`, and `actions/deploy-pages` against GitHub's documentation.
-- **Passphrase rules.** Minimum length, and key-derivation settings (PBKDF2 iterations, using WebCrypto with AES-GCM). Choose before encrypting any token.
-- **GitHub API rate limits.** Verify the current limits. The public site should not make live API calls to render pages; history and listings should be built in advance.
-- **Licence.** Decide whether to add one. Without a licence, the content is all rights reserved by default.
-- **Starting content.** Initial folders, initial `tags.yml`, and whether any existing notes will be migrated.
+- **Repository and URLs.** Repo: https://github.com/ink-and-ember-forge/empire-wiki. Live site: https://ink-and-ember-forge.github.io/empire-wiki/ (this is also `base_url` in `wiki.yml`).
+- **Trusted editors.** The owner only, for now. Adding an editor later means: add them as a collaborator with write access, they create a fine-grained token, and encrypt it with their own passphrase. No design change.
+- **Action versions** (checked against the actions' published tags, not yet exercised by a real run): `actions/checkout@v7`, `actions/setup-node@v7`, `actions/configure-pages@v6`, `actions/upload-pages-artifact@v5`, `actions/deploy-pages@v5`.
+- **Passphrase and KDF.** See section 3. The encrypted token file is stored in a public repository, so it can be downloaded and attacked offline. The passphrase length is the main defence; the iteration count only slows each guess.
+- **Token type.** Fine-grained PAT limited to this repository. If an encrypted token were ever cracked, the damage is limited to this wiki.
+- **Licence.** CC BY-SA 4.0. `LICENSE` holds the full legal code.
+- **Starting content.** Empty `content/characters`, `content/factions` and `content/locations`; tags as in `tags.yml`. No notes migrated.
+- **Rate limits (design rule).** The public site makes no live API calls; history, listings and search data are built in advance. The editor uses the unlocked token for every API call, including reads, so it never depends on the low anonymous limit. The current numeric limits have not been verified against GitHub's documentation (anonymous access is far lower than authenticated). Publishing is a handful of writes per publish, well inside any limit.
+
+### Still to do
+
+- **Pages source setting.** In the repository: Settings, then Pages, then Build and deployment, then Source: **GitHub Actions**. Confirm the menu wording when doing it.
+- **Token expiry.** Choose an expiry for the owner's fine-grained token and set a reminder to renew it.
 
 ## 14. Out of scope for version 1
 
