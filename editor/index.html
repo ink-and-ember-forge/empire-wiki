@@ -10,6 +10,10 @@
 </head>
 <body>
 <main>
+  <nav class="topnav">
+    <a id="homeLink" href="../">&larr; Back to the wiki</a>
+    <span id="liveWrap" hidden> &middot; <a id="liveLink" href="../">View live page</a><span id="liveNote" class="hint" hidden>Not on the live site yet (draft)</span></span>
+  </nav>
   <h1>Editor</h1>
   <p id="status" role="status"></p>
 
@@ -28,6 +32,16 @@
       <p class="hint">Path under <code>content/</code>, without <code>.md</code>. A path that doesn't exist yet starts a new draft.</p>
     </form>
 
+    <details id="location" class="panel" hidden>
+      <summary>Location: <code id="locPath"></code></summary>
+      <label>Path <input id="newPath" spellcheck="false"></label>
+      <p class="hint">Page ID: <code id="pageId"></code></p>
+      <p class="hint warn" id="folderWarn" role="status"></p>
+      <label id="moveMsgLabel">Edit summary (optional) <input id="moveMsg"></label>
+      <p class="hint" id="moveHint"></p>
+      <button id="moveBtn" type="button">Move page</button>
+    </details>
+
     <form id="edit" hidden>
       <label>Title <input id="title" required></label>
       <div class="row">
@@ -41,7 +55,10 @@
       <p class="hint" id="knownTags"></p>
       <label>Summary <input id="summary"></label>
       <label class="check"><input id="previewToggle" type="checkbox"> Preview</label>
-      <label id="bodyLabel">Body (Markdown) <textarea id="body" rows="22" spellcheck="true"></textarea></label>
+      <label id="bodyLabel">Body (Markdown) <textarea id="body" rows="22" spellcheck="true" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="picker"></textarea></label>
+      <ul id="picker" role="listbox" aria-label="Pages to link to" hidden></ul>
+      <p class="hint" id="indexHint" role="status"></p>
+      <p class="hint">Type <code>[[</code> to link to another page.</p>
       <div id="preview" class="preview" hidden></div>
       <button type="submit">Review &amp; publish</button>
     </form>
@@ -49,6 +66,7 @@
     <section id="confirm" class="panel" hidden>
       <h2>Publish</h2>
       <p id="confirmList"></p>
+      <p class="hint warn" id="confirmFolderWarn" role="status"></p>
       <label>Edit summary (optional) <input id="message"></label>
       <p class="hint">Goes straight to the live site, which takes a minute or two to rebuild.</p>
       <button id="confirmBtn" type="button">Confirm &amp; publish</button>

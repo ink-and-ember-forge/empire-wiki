@@ -38,6 +38,7 @@ A personal wiki for organising worldbuilding notes (the "Empire" notes), hosted 
   wiki.yml              site-wide settings and schema version
   tags.yml              controlled tag list offered by the editor
   content/              all wiki pages, organised into folders
+  links/                one link map per page (links/<page id>.yml), maintained by the editor
     characters/
     factions/
     locations/
@@ -62,6 +63,7 @@ tags: [characters, nisien]  # from tags.yml; new tags allowed
 summary: One line for listings and search
 updated: 2026-10-16         # set by the editor on publish
 order: 10                   # position within its folder
+id: n4v7k2x9                # stable page id, set by the editor
 ---
 ```
 
@@ -77,7 +79,33 @@ order: 10                   # position within its folder
 - **`summary`** is shown in folder listings and search results.
 - **`updated`** is set by the editor on each publish.
 - **`order`** sorts pages within a folder. Pages without it sort alphabetically after those with it.
+- **`id`** is a stable identifier (a letter followed by 5-15 lowercase letters or digits; the editor makes 8-character ones). It never changes when a page is moved or retitled. The editor adds it on a page's first publish, or `npm run ids` backfills it. Ids must be unique: the build fails on a duplicate (a copied page carries its id along).
 - Unknown keys are **ignored** by the build, not treated as errors, so future fields don't break older builds.
+
+### Wiki links
+
+- `[[Navarr Vate]]` links to another page. The target is matched case-insensitively against page titles, then file names (`navarr-vate`). `[[characters/navarr-vate]]` matches an exact path under `content/`. `[[Target|label]]` shows `label` instead.
+- If the page is built (`published` or `hidden`), the link is a normal link.
+- If it isn't (no such page, or only a `draft`), it renders as a **missing link**: a different style (red, dashed underline) that opens the editor on that page. A missing name with no path becomes a new draft in the same folder as the page that links to it. Without an editor token, a reader just sees the unlock screen.
+- If two pages match, the build warns and prefers the one in the same folder, then the first by path.
+- Links inside code spans and code blocks are left alone. The editor preview resolves links against the repository, so drafts show as missing there.
+- Typing `[[` in the editor opens a **picker** of existing pages (drafts included, with their path). Choosing one inserts its title and remembers which page you meant.
+
+### Link IDs
+
+Links are written by name, but a name can change: a page can be moved or retitled. So each page that has an `id` has a **link map**, `links/<page id>.yml`, recording which page (by id) each of its `[[links]]` points at:
+
+```yaml
+links:
+  navarr vate: n4v7k2x9      # the text of the link, lower-cased -> the target page's id
+```
+
+- **Page text is never rewritten.** The link stays `[[Navarr Vate]]`; the map is a separate file, keyed by the *source* page's id so moving that page never touches it.
+- **Resolution order:** a recorded id first, then the name rules above. If the recorded id no longer exists, the link falls back to its name. Links without a recorded id still work by name.
+- **Moves and retitles keep links working.** What is displayed is the text as written: after a retitle, `[[Navarr Vate]]` still points at the right page but still reads "Navarr Vate" until someone edits it.
+- **Who writes the map.** The editor, on publish (as a second commit, so it never appears in a page's change log): it keeps existing entries, adds picker choices, adds links that resolve by name to a page with an id, and drops entries for links no longer in the page. Pages edited outside the editor are covered by `npm run ids` (`-- --check` reports without changing anything), or by publishing them once in the editor.
+- **Build checks.** It fails on duplicate or malformed ids. It warns about orphaned link maps, entries whose target id doesn't exist, pages with no id, and how many links still match by name only.
+- **Old addresses redirect.** The build reads each page's Git rename history and writes a small redirect page at every previous address (never over a page that now lives there).
 
 ### Defaults
 
@@ -126,8 +154,9 @@ The build is a custom script (Node.js) that:
 7. Generates a folder listing page for each folder, excluding `hidden` pages.
 8. Generates a search index (JSON) of titles, tags, summaries, and URLs for `published` pages. **Hidden page titles are included**, as agreed.
 9. Generates a change log for each built page from Git history (see section 10).
-10. Writes everything to `_site/`.
-11. Warns about single-use tags. Fails on invalid front matter or missing required fields.
+10. Writes redirect pages for each built page's previous addresses (from Git rename history).
+11. Writes everything to `_site/`.
+12. Warns about single-use tags. Fails on invalid front matter, missing required fields or duplicate ids.
 
 The build does not need to be fast. The site is small.
 
@@ -173,6 +202,13 @@ The editor is a browser page built into the site (under `/editor/`). It talks to
 - Every built page shows an **Edit** control. It does nothing until the editor is unlocked, at which point it opens that page in the editor.
 - Editing a published or hidden page starts from the page itself.
 - **Drafts are edited from the page list**, since they aren't built and can't be reached from the public site.
+
+### Location, moving and the live site
+
+- Every editor page has a **Back to the wiki** link. Once a page is open, a **View live page** link goes to its built version; a draft (or a page that doesn't exist yet) shows a "not on the live site" note instead.
+- The **Location** panel shows where the page lives (`content/<path>.md`). For a **new page** it sets where the page will be created; nothing is saved until publish. For an **existing page** it **moves/renames** the page: one commit that keeps the file's content unchanged, so Git records a rename and the change log follows it. A move is refused while there are unpublished edits, if the destination already exists, or if the wiki changed during the move.
+- **New folder warning.** If a path's folder doesn't exist yet, the editor warns (in the Location panel, and again in the publish confirmation), suggests the nearest existing folder if it looks like a typo, and lists the existing ones. The warning doesn't block anything: creating a folder is allowed.
+- A move does not rewrite any page. Links recorded by id keep working (see Link IDs), and the old web address redirects once the site rebuilds. Links that only match the page by name, such as links to a page with no id yet, may break.
 
 ### Conflicts
 

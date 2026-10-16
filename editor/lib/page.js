@@ -1,7 +1,7 @@
 // Page parsing, serialising and edit summaries. Mirrors the format in spec.md section 5.
 import yaml from '../vendor/js-yaml.mjs';
 
-const KNOWN = ['title', 'status', 'stub', 'tags', 'summary', 'updated', 'order'];
+const KNOWN = ['title', 'status', 'stub', 'tags', 'summary', 'updated', 'order', 'id'];
 const LABELS = { title: 'title', status: 'status', stub: 'stub flag', summary: 'summary', tags: 'tags', order: 'order' };
 const FM = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
 

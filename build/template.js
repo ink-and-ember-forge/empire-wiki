@@ -79,3 +79,20 @@ export function listingHtml(ctx, dir, pages, subdirs) {
     body: `<h1>${esc(name)}</h1>\n${folders}\n${items}\n${empty}`,
   });
 }
+
+export function redirectHtml({ wiki }, url, title) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Moved: ${esc(title)} · ${esc(wiki.title)}</title>
+<link rel="canonical" href="${esc(url)}">
+<meta http-equiv="refresh" content="0; url=${esc(url)}">
+</head>
+<body>
+<p>This page has moved to <a href="${esc(url)}">${esc(title)}</a>.</p>
+</body>
+</html>
+`;
+}

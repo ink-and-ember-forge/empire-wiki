@@ -5,7 +5,9 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
 import MarkdownIt from 'markdown-it';
-import { pageHtml, listingHtml } from './template.js';
+import { pageHtml, listingHtml, redirectHtml } from './template.js';
+import { wikilinkPlugin, makeResolver } from '../editor/lib/wikilinks.js';
+import { ID_PATTERN, linkTargets, linkKey, parseLinkMap } from '../editor/lib/links.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONTENT = path.join(ROOT, 'content');
@@ -30,7 +32,7 @@ const defaultStatus = STATUSES.includes(wiki.default_status) ? wiki.default_stat
 const basePath = new URL(process.env.BASE_URL ?? wiki.base_url ?? 'http://localhost/').pathname.replace(/\/$/, '');
 const showHistory = wiki.editor?.show_history !== false;
 
-const md = new MarkdownIt({ html: false, linkify: true });
+const md = new MarkdownIt({ html: false, linkify: true }).use(wikilinkPlugin);
 
 function parsePage(file) {
   const rel = path.relative(CONTENT, file).split(path.sep).join('/');
@@ -60,10 +62,16 @@ function parsePage(file) {
     errors.push(`${rel}: invalid status "${status}" (expected ${STATUSES.join(' | ')})`);
     return null;
   }
+  const id = fm.id === undefined || fm.id === null ? '' : String(fm.id);
+  if (id && !ID_PATTERN.test(id)) {
+    errors.push(`${rel}: invalid id "${id}" (expected a letter followed by 5-15 lowercase letters or digits)`);
+    return null;
+  }
   const slug = rel.replace(/\.md$/, '');
   return {
     rel,
     slug,
+    id,
     dir: path.posix.dirname(slug) === '.' ? '' : path.posix.dirname(slug),
     title: fm.title,
     status,
@@ -102,22 +110,25 @@ const byOrder = (a, b) => {
   return a.title.localeCompare(b.title);
 };
 
+// Per-page change log plus every path the page has had (for redirects), from `git log --follow`.
 function history(rel) {
   try {
     const out = execFileSync(
       'git',
-      ['log', '--follow', '--format=%an%x1f%aI%x1f%s', '--', path.join('content', rel)],
+      ['log', '--follow', '--name-only', '--format=%x00%an%x1f%aI%x1f%s', '--', path.join('content', rel)],
       { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] },
     );
-    return out
-      .split('\n')
-      .filter(Boolean)
-      .map((l) => {
-        const [author, date, summary] = l.split('\x1f');
-        return { author, date: date.slice(0, 10), summary };
-      });
+    const log = [];
+    const paths = new Set();
+    for (const chunk of out.split('\0').filter(Boolean)) {
+      const [head, ...names] = chunk.split('\n');
+      const [author, date, summary] = head.split('\x1f');
+      log.push({ author, date: date.slice(0, 10), summary });
+      for (const n of names.filter(Boolean)) if (n.startsWith('content/') && n.endsWith('.md')) paths.add(n.slice('content/'.length, -'.md'.length));
+    }
+    return { log, paths: [...paths] };
   } catch {
-    return [];
+    return { log: [], paths: [] };
   }
 }
 
@@ -138,6 +149,31 @@ for (const [tag, n] of tagCounts) {
   if (n === 1 && !tagDefs.includes(tag)) warnings.push(`tag "${tag}" is used on only one page (typo?)`);
 }
 
+// Page ids must be unique (a copied page would carry its id along).
+const idOwner = new Map();
+for (const p of pages) {
+  if (!p.id) continue;
+  if (idOwner.has(p.id)) errors.push(`${p.rel}: id "${p.id}" is also used by ${idOwner.get(p.id)}`);
+  else idOwner.set(p.id, p.rel);
+}
+
+// links/<page id>.yml: each page's recorded link targets, by page id.
+const linkMaps = new Map();
+const linksDir = path.join(ROOT, 'links');
+if (fs.existsSync(linksDir)) {
+  for (const f of fs.readdirSync(linksDir).filter((n) => n.endsWith('.yml'))) {
+    const sourceId = f.slice(0, -'.yml'.length);
+    try {
+      const map = parseLinkMap(fs.readFileSync(path.join(linksDir, f), 'utf8'));
+      linkMaps.set(sourceId, map);
+      if (!idOwner.has(sourceId)) warnings.push(`links/${f}: no page has id "${sourceId}" (orphaned link map)`);
+      for (const [text, target] of map) if (!idOwner.has(target)) warnings.push(`links/${f}: "${text}" points at id "${target}", which no page has; falling back to the name`);
+    } catch (e) {
+      errors.push(`links/${f}: invalid link map (${e.message.split('\n')[0]})`);
+    }
+  }
+}
+
 if (errors.length) {
   for (const e of errors) console.error(`error: ${e}`);
   console.error(`Build failed with ${errors.length} error(s).`);
@@ -149,11 +185,31 @@ fs.rmSync(OUT, { recursive: true, force: true });
 const ctx = { wiki, basePath };
 const built = pages.filter((p) => p.status !== 'draft');
 
+// [[wiki links]] resolve against every page; drafts count as "not on the site yet".
+// A page's recorded link ids (links/<id>.yml) win over name matching.
+const resolve = makeResolver(pages.map(({ slug, title, status, id }) => ({ slug, title, status, id })), { basePath });
+const bySlug = new Map(pages.map((p) => [p.slug, p]));
+const moved = []; // { from, to, title }
+let nameOnlyLinks = 0;
+const namesOnlyPages = new Set();
 for (const p of built) {
-  write(
-    `${p.slug}/index.html`,
-    pageHtml(ctx, p, md.render(p.body), showHistory ? history(p.rel) : []),
-  );
+  const links = linkMaps.get(p.id);
+  const env = {
+    wikiResolve: (target) => resolve(target, p.dir, links),
+    wikiWarn: (m) => !warnings.includes(`${p.rel}: ${m}`) && warnings.push(`${p.rel}: ${m}`),
+  };
+  // Links that resolve to a page with an id, but aren't recorded, would break if that page moved.
+  for (const [key, raw] of linkTargets(md, p.body)) {
+    if (links?.has(key)) continue;
+    const r = resolve(raw, p.dir);
+    if (r && bySlug.get(r.slug)?.id) {
+      nameOnlyLinks++;
+      namesOnlyPages.add(p.rel);
+    }
+  }
+  const h = history(p.rel);
+  write(`${p.slug}/index.html`, pageHtml(ctx, p, md.render(p.body, env), showHistory ? h.log : []));
+  for (const old of h.paths) if (old !== p.slug) moved.push({ from: old, to: p.url, title: p.title });
 }
 
 for (const d of dirs) {
@@ -164,6 +220,22 @@ for (const d of dirs) {
     .map((x) => ({ name: path.posix.basename(x), url: `${basePath}/${x}/` }));
   write(d ? `${d}/index.html` : 'index.html', listingHtml(ctx, d, listed, subdirs));
 }
+
+// Old addresses (from Git rename history) redirect to where the page lives now.
+for (const m of moved) {
+  const target = path.join(OUT, m.from, 'index.html');
+  if (fs.existsSync(target)) {
+    warnings.push(`old address /${m.from}/ is now a different page or folder; no redirect written`);
+    continue;
+  }
+  write(`${m.from}/index.html`, redirectHtml(ctx, m.to, m.title));
+}
+
+if (pages.some((p) => !p.id)) {
+  const n = pages.filter((p) => !p.id).length;
+  warnings.push(`${n} page(s) have no id, so links to them match by name only. Run "npm run ids", or publish them in the editor.`);
+}
+if (nameOnlyLinks) warnings.push(`${nameOnlyLinks} link(s) on ${namesOnlyPages.size} page(s) match by name only. Run "npm run ids", or publish those pages in the editor.`);
 
 const searchIndex = built.sort(byOrder).map((p) => ({
   title: p.title,

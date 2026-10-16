@@ -33,6 +33,8 @@ Markdown body here.
 
 Drafts are never built. Hidden pages are built but unlisted and `noindex`.
 
+Link to other pages with `[[Page title]]` (or `[[folder/file-name]]`, or `[[Page title|label]]`). Links to pages that don't exist yet, or are still drafts, show in red with a dashed underline and open the editor so you can create them.
+
 ## Local build
 
 ```sh
@@ -52,6 +54,10 @@ Live at `/editor/` on the site; every page has an **Edit** link that opens it th
 3. Commit the JSON it shows to `editor/tokens/<your-github-username>.json` (GitHub web UI is fine). After the next deploy you can unlock.
 
 The token is decrypted into memory only and is gone when the tab reloads. Publishing commits straight to `main` as you.
+
+Each page gets a stable `id` when first published in the editor, and its `[[links]]` are recorded by id in `links/<page id>.yml`, so links keep working when a page is moved or retitled (the page text is never rewritten). Typing `[[` in the editor opens a picker. For pages created or edited outside the editor, run `npm run ids` (add `-- --check` to just report) to backfill ids and link maps. Old addresses of moved pages redirect automatically.
+
+The **Location** panel moves or renames a page (one commit, history preserved) and warns when a path would create a new folder. 
 
 Run the tests with `npm test`.
 
